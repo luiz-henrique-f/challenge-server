@@ -1,26 +1,51 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { Order } from './entities/order.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class OrdersService {
-  create(createOrderDto: CreateOrderDto) {
-    return 'This action adds a new order';
+  constructor(
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+  ) {}
+
+  create(createOrderDto: CreateOrderDto): Promise<Order> {
+    const newOrder = this.orderRepository.create(createOrderDto);
+    return this.orderRepository.save(newOrder);
   }
 
-  findAll() {
-    return `This action returns all orders`;
+  findAll(): Promise<Order[]> {
+    return this.orderRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  async findOne(id: string): Promise<Order | null> {
+    return await this.orderRepository.findOne({ where: { id } });
   }
 
-  update(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
+  async update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order> {
+    const existingOrder = await this.orderRepository.findOne({ where: { id } });
+
+    if (!existingOrder) {
+      throw new NotFoundException(`Pedido com ID "${id}" não encontrado.`);
+    }
+
+    const updatedOrder = Object.assign(existingOrder, updateOrderDto);
+
+    return this.orderRepository.save(updatedOrder);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} order`;
+  async remove(id: string) {
+    const orderToRemove = await this.orderRepository.findOne({ where: { id } });
+
+    if (!orderToRemove) {
+      throw new NotFoundException(`Pedido com ID ${id} não encontrado.`);
+    }
+
+    await this.orderRepository.remove(orderToRemove);
+
+    return { message: `Pedido com ID ${id} removido com sucesso.` };
   }
 }

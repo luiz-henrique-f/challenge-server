@@ -4,9 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 
-// Define o enum para os status do pedido
 export enum OrderStatus {
   PENDENTE = 'pendente',
   PROCESSANDO = 'processando',
@@ -15,19 +15,19 @@ export enum OrderStatus {
   CANCELADO = 'cancelado',
 }
 
-// Define a interface para a estrutura dos itens
-// Isso garante a tipagem correta ao usar a coluna JSON
 interface OrderItem {
+  productId: string;
+  nome?: string;
   quantidade: number;
   preco: number;
 }
 
-@Entity()
+@Entity({ name: 'orders' })
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('jsonb')
+  @Column('jsonb', { name: 'items' })
   items: OrderItem[];
 
   @Column({
@@ -35,6 +35,7 @@ export class Order {
     enum: OrderStatus,
     default: OrderStatus.PENDENTE,
   })
+  @Index()
   status: OrderStatus;
 
   @CreateDateColumn({ name: 'created_at' })
