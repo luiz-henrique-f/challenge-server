@@ -1,19 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ClientKafka } from '@nestjs/microservices';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @Inject('ORDERS_SERVICE')
+    private kafkaClient: ClientKafka,
   ) {}
 
-  create(createOrderDto: CreateOrderDto): Promise<Order> {
+  async create(createOrderDto: CreateOrderDto): Promise<Order> {
     const newOrder = this.orderRepository.create(createOrderDto);
+    await lastValueFrom(this.kafkaClient.emit('order_created', newOrder));
     return this.orderRepository.save(newOrder);
   }
 
@@ -33,6 +38,8 @@ export class OrdersService {
     }
 
     const updatedOrder = Object.assign(existingOrder, updateOrderDto);
+
+    await lastValueFrom(this.kafkaClient.emit('order_status_updated', updatedOrder));
 
     return this.orderRepository.save(updatedOrder);
   }
