@@ -45,4 +45,27 @@ export class OrdersController {
   remove(@Param('id') id: string) {
     return this.ordersService.remove(id);
   }
+
+  @Get('/searchId/:id')
+  searchById(@Param('id') id: string) {
+    return this.ordersService.searchById(id);
+  }
+
+  @Get('/searchStatus/:status')
+  searchByStatus(@Param('status') status: string) {
+    return this.ordersService.searchByStatus(status);
+  }
+
+  @Get('/searchDateRange/:startDate/:endDate')
+  searchByDateRange(
+    @Param('startDate') startDate: string,
+    @Param('endDate') endDate: string,
+  ) {
+    return this.ordersService.searchByDateRange(startDate, endDate);
+  }
+
+  @Get('/searchByItemName/:itemName')
+  searchByItemName(@Param('itemName') itemName: string) {
+    return this.ordersService.searchByItemName(itemName);
+  }
 }

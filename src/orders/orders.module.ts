@@ -4,6 +4,9 @@ import { OrdersController } from './orders.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import {
+  ElasticsearchModule,
+} from '@nestjs/elasticsearch';
 
 @Module({
   imports: [
@@ -21,6 +24,10 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         },
       },
     ]),
+    ElasticsearchModule.register({
+      node: 'http://elasticsearch01:9200', // Substitua pelo endereço do seu servidor Elasticsearch
+      // Outras opções de configuração podem ser adicionadas aqui
+    }),
   ],
   controllers: [
     OrdersController, // Apenas os controladores ficam nesta seção.

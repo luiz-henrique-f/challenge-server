@@ -1,3 +1,7 @@
+networks:
+  shared_network:
+    external: true
+
 services:
   app:
     build: .
@@ -5,10 +9,8 @@ services:
       - 3000:3000
     volumes:
       - .:/home/node/app
-    depends_on:
-      - elasticsearch01
     networks:
-      - elastic
+      - shared_network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
@@ -20,7 +22,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - elastic
+      - shared_network
 
   kafka:
     image: confluentinc/cp-server:7.3.0
@@ -45,7 +47,7 @@ services:
       CONFLUENT_METRICS_ENABLE: 'false'
       CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
     networks:
-      - elastic
+      - shared_network
 
   postgres:
     image: postgres:15
@@ -56,19 +58,4 @@ services:
     ports:
       - '5432:5432'
     networks:
-      - elastic
-
-  elasticsearch01:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
-    container_name: elasticsearch01
-    ports: 
-      - 9200:9200
-      - 9300:9300
-    environment:
-      discovery.type: single-node
-    networks:
-      - elastic
-
-networks:
-  elastic:
-    driver: bridge
+      - shared_network

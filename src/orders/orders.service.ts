@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientKafka } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
+import { ElasticsearchService } from '@nestjs/elasticsearch';
 
 @Injectable()
 export class OrdersService {
@@ -14,12 +15,23 @@ export class OrdersService {
     private readonly orderRepository: Repository<Order>,
     @Inject('ORDERS_SERVICE')
     private kafkaClient: ClientKafka,
+    private readonly elasticsearchService: ElasticsearchService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
     const newOrder = this.orderRepository.create(createOrderDto);
-    await lastValueFrom(this.kafkaClient.emit('order_created', newOrder));
-    return this.orderRepository.save(newOrder);
+    const order = await this.orderRepository.save(newOrder);
+    await lastValueFrom(this.kafkaClient.emit('order_created', order));
+    const result = await this.elasticsearchService.index({
+      index: 'orders',
+      id: order.id,
+      body: {
+        order,
+      },
+    });
+    console.log('Elasticsearch index result:', result);
+
+    return order;
   }
 
   findAll(): Promise<Order[]> {
@@ -39,9 +51,29 @@ export class OrdersService {
 
     const updatedOrder = Object.assign(existingOrder, updateOrderDto);
 
-    await lastValueFrom(this.kafkaClient.emit('order_status_updated', updatedOrder));
+    await this.orderRepository.save(updatedOrder);
 
-    return this.orderRepository.save(updatedOrder);
+    // Envia atualização para o Kafka
+    await lastValueFrom(
+      this.kafkaClient.emit('order_status_updated', updatedOrder),
+    );
+
+    // Atualiza no Elasticsearch usando o mesmo ID do banco como _id
+    await this.elasticsearchService.update({
+      index: 'orders',
+      id,
+      body: {
+        doc: {
+          order: {
+            ...existingOrder,
+            status: updateOrderDto.status,
+          },
+        },
+        doc_as_upsert: true,
+      },
+    });
+
+    return updatedOrder;
   }
 
   async remove(id: string) {
@@ -54,5 +86,67 @@ export class OrdersService {
     await this.orderRepository.remove(orderToRemove);
 
     return { message: `Pedido com ID ${id} removido com sucesso.` };
+  }
+
+  async searchById(id: string) {
+    const { body } = await this.elasticsearchService.search({
+      index: 'orders',
+      body: {
+        query: {
+          term: {
+            'order.id.keyword': id, // keyword para busca exata
+          },
+        },
+      },
+    });
+    return body;
+  }
+
+  // 2. Buscar por status do pedido
+  async searchByStatus(status: string) {
+    const { body } = await this.elasticsearchService.search({
+      index: 'orders',
+      body: {
+        query: {
+          match: {
+            status: status,
+          },
+        },
+      },
+    });
+    return body.hits.hits;
+  }
+
+  // 3. Buscar por intervalo de datas (campo createdAt)
+  async searchByDateRange(startDate: string, endDate: string) {
+    const { body } = await this.elasticsearchService.search({
+      index: 'orders',
+      body: {
+        query: {
+          range: {
+            createdAt: {
+              gte: startDate, // exemplo: "2025-08-01T00:00:00Z"
+              lte: endDate, // exemplo: "2025-08-10T23:59:59Z"
+            },
+          },
+        },
+      },
+    });
+    return body.hits.hits;
+  }
+
+  // 4. Buscar por itens contidos no pedido (campo items.nome)
+  async searchByItemName(itemName: string) {
+    const { body } = await this.elasticsearchService.search({
+      index: 'orders',
+      body: {
+        query: {
+          match: {
+            'items.nome': itemName,
+          },
+        },
+      },
+    });
+    return body.hits.hits;
   }
 }
