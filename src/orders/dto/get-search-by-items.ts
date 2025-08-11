@@ -8,11 +8,7 @@ export class GetSearchByItemsDto {
   @IsOptional()
   @IsString()
   productId?: string;
-
-  @IsOptional()
-  @IsString()
-  nome?: string;
-
+  
   @IsOptional()
   @IsNumber()
   quantidade?: number;

@@ -19,10 +19,6 @@ class OrderItemDto {
   @IsString()
   productId: string;
 
-  @IsOptional()
-  @IsString()
-  nome?: string;
-
   @IsNotEmpty()
   @IsNumber()
   quantidade: number;

@@ -66,7 +66,7 @@ export class OrdersService {
       body: {
         doc: {
           order: {
-            ...existingOrder,
+            ...updatedOrder,
             status: updateOrderDto.status,
           },
         },
@@ -139,7 +139,6 @@ export class OrdersService {
   // 4. Buscar por itens contidos no pedido (campo items.nome)
   async searchByItems(searchParams: {
     productId?: string;
-    nome?: string;
     quantidade?: number;
     preco?: number;
   }) {
@@ -149,14 +148,6 @@ export class OrdersService {
       mustClauses.push({
         match: {
           'order.items.productId': searchParams.productId,
-        },
-      });
-    }
-
-    if (searchParams.nome) {
-      mustClauses.push({
-        match: {
-          'order.items.nome': searchParams.nome,
         },
       });
     }

@@ -77,7 +77,7 @@ services:
       test: curl -s http://localhost:9200/_cluster/health || exit 1
       interval: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   kibana01:
     image: docker.elastic.co/kibana/kibana:7.9.2
