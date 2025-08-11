@@ -12,10 +12,16 @@ import {
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { GetSearchByItemsDto } from './dto/get-search-by-items';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
+
+  @Get('/searchByItems')
+  searchByItems(@Body() searchParams: GetSearchByItemsDto) {
+    return this.ordersService.searchByItems(searchParams);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -62,10 +68,5 @@ export class OrdersController {
     @Param('endDate') endDate: string,
   ) {
     return this.ordersService.searchByDateRange(startDate, endDate);
-  }
-
-  @Get('/searchByItemName/:itemName')
-  searchByItemName(@Param('itemName') itemName: string) {
-    return this.ordersService.searchByItemName(itemName);
   }
 }

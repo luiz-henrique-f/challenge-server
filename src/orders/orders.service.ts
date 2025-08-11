@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { ClientKafka } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
+import { QueryDslQueryContainer } from '@elastic/elasticsearch/api/types';
 
 @Injectable()
 export class OrdersService {
@@ -99,7 +100,7 @@ export class OrdersService {
         },
       },
     });
-    return body;
+    return body.hits.hits;
   }
 
   // 2. Buscar por status do pedido
@@ -109,7 +110,7 @@ export class OrdersService {
       body: {
         query: {
           match: {
-            status: status,
+            'order.status': status,
           },
         },
       },
@@ -124,7 +125,7 @@ export class OrdersService {
       body: {
         query: {
           range: {
-            createdAt: {
+            'order.createdAt': {
               gte: startDate, // exemplo: "2025-08-01T00:00:00Z"
               lte: endDate, // exemplo: "2025-08-10T23:59:59Z"
             },
@@ -136,17 +137,57 @@ export class OrdersService {
   }
 
   // 4. Buscar por itens contidos no pedido (campo items.nome)
-  async searchByItemName(itemName: string) {
+  async searchByItems(searchParams: {
+    productId?: string;
+    nome?: string;
+    quantidade?: number;
+    preco?: number;
+  }) {
+    const mustClauses: QueryDslQueryContainer[] = [];
+
+    if (searchParams.productId) {
+      mustClauses.push({
+        match: {
+          'order.items.productId': searchParams.productId,
+        },
+      });
+    }
+
+    if (searchParams.nome) {
+      mustClauses.push({
+        match: {
+          'order.items.nome': searchParams.nome,
+        },
+      });
+    }
+
+    if (searchParams.quantidade) {
+      mustClauses.push({
+        term: {
+          'order.items.quantidade': searchParams.quantidade,
+        },
+      });
+    }
+
+    if (searchParams.preco) {
+      mustClauses.push({
+        term: {
+          'order.items.preco': searchParams.preco,
+        },
+      });
+    }
+
     const { body } = await this.elasticsearchService.search({
       index: 'orders',
       body: {
         query: {
-          match: {
-            'items.nome': itemName,
+          bool: {
+            must: mustClauses,
           },
         },
       },
     });
+
     return body.hits.hits;
   }
 }

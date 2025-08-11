@@ -19,7 +19,7 @@ import {
         options: {
           client: {
             clientId: 'orders',
-            brokers: ['kafka:29092'],
+            brokers: ['kafka:9092'],
           },
         },
       },
