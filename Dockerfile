@@ -1,11 +1,12 @@
 FROM node:20-slim
 
-RUN apt-get update -y && apt-get install -y openssl procps
-
-RUN npm install -g npm@11.5.2
+RUN apt-get update -y && apt-get install -y openssl procps curl
 
 WORKDIR /home/node/app
 
-USER node
+COPY package*.json ./
+RUN npm install -g npm@11.5.2 && npm install
 
-CMD ["npm", "run", "start:dev"]
+COPY . .
+
+CMD ["npm", "run", "start:prod"]
