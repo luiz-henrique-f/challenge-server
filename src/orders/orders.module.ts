@@ -7,16 +7,16 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ElasticsearchModule } from '@nestjs/elasticsearch';
 
 // Crie o objeto de configuração do Elasticsearch de forma dinâmica.
-const elasticsearchConfig = {
-  node: process.env.ELASTICSEARCH_URL || 'http://elasticsearch01:9200',
-};
+// const elasticsearchConfig = {
+//   node: process.env.ELASTICSEARCH_URL || 'http://elasticsearch01:9200',
+// };
 
-// Se a chave da API for fornecida, adicione-a à configuração.
-if (process.env.ELASTICSEARCH_API_KEY) {
-  elasticsearchConfig['auth'] = {
-    apikey: process.env.ELASTICSEARCH_API_KEY,
-  };
-}
+// // Se a chave da API for fornecida, adicione-a à configuração.
+// if (process.env.ELASTICSEARCH_API_KEY) {
+//   elasticsearchConfig['auth'] = {
+//     apikey: process.env.ELASTICSEARCH_API_KEY,
+//   };
+// }
 
 @Module({
   imports: [
@@ -44,7 +44,12 @@ if (process.env.ELASTICSEARCH_API_KEY) {
         },
       },
     ]),
-    ElasticsearchModule.register(elasticsearchConfig),
+    ElasticsearchModule.register({
+      node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
+      auth: {
+        apiKey: process.env.ELASTICSEARCH_API_KEY || '',
+      }
+    }),
   ],
   controllers: [OrdersController],
   providers: [OrdersService],
