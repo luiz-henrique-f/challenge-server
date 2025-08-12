@@ -9,4 +9,6 @@ RUN npm install -g npm@11.5.2 && npm install
 
 COPY . .
 
+RUN npm run build
+
 CMD ["npm", "run", "start:prod"]
