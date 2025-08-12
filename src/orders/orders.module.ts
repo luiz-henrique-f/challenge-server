@@ -4,13 +4,22 @@ import { OrdersController } from './orders.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import {
-  ElasticsearchModule,
-} from '@nestjs/elasticsearch';
+import { ElasticsearchModule } from '@nestjs/elasticsearch';
+
+// Crie o objeto de configuração do Elasticsearch de forma dinâmica.
+const elasticsearchConfig = {
+  node: process.env.ELASTICSEARCH_URL || 'http://elasticsearch01:9200',
+};
+
+// Se a chave da API for fornecida, adicione-a à configuração.
+if (process.env.ELASTICSEARCH_API_KEY) {
+  elasticsearchConfig['auth'] = {
+    apikey: process.env.ELASTICSEARCH_API_KEY,
+  };
+}
 
 @Module({
   imports: [
-    // O TypeOrmModule é um módulo de importação, então ele deve ir aqui.
     TypeOrmModule.forFeature([Order]),
     ClientsModule.register([
       {
@@ -19,19 +28,25 @@ import {
         options: {
           client: {
             clientId: 'orders',
-            brokers: ['kafka:9092'],
+            brokers: [process.env.KAFKA_BROKER || 'kafka:9092'],
+            sasl: process.env.KAFKA_USERNAME
+              ? {
+                  mechanism: 'plain',
+                  username: process.env.KAFKA_USERNAME,
+                  password: process.env.KAFKA_PASSWORD || '',
+                }
+              : undefined,
+            ssl: process.env.KAFKA_USERNAME ? true : undefined,
+          },
+          consumer: {
+            groupId: process.env.KAFKA_GROUP_ID || 'orders-consumer',
           },
         },
       },
     ]),
-    ElasticsearchModule.register({
-      node: 'http://elasticsearch01:9200', // Substitua pelo endereço do seu servidor Elasticsearch
-      // Outras opções de configuração podem ser adicionadas aqui
-    }),
+    ElasticsearchModule.register(elasticsearchConfig),
   ],
-  controllers: [
-    OrdersController, // Apenas os controladores ficam nesta seção.
-  ],
+  controllers: [OrdersController],
   providers: [OrdersService],
 })
 export class OrdersModule {}

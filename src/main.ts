@@ -10,10 +10,18 @@ async function bootstrap() {
     transport: Transport.KAFKA,
     options: {
       client: {
-        brokers: ['kafka:9092'],
+        brokers: [process.env.KAFKA_BROKER || 'kafka:9092'],
+        sasl: process.env.KAFKA_USERNAME
+          ? {
+              mechanism: 'plain',
+              username: process.env.KAFKA_USERNAME,
+              password: process.env.KAFKA_PASSWORD || '',
+            }
+          : undefined,
+        ssl: process.env.KAFKA_USERNAME ? true : undefined,
       },
       consumer: {
-        groupId: 'orders-consumer',
+        groupId: process.env.KAFKA_GROUP_ID || 'orders-consumer',
       },
     },
   });
