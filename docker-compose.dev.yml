@@ -1,10 +1,14 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     ports:
       - 3000:3000
     volumes:
       - .:/home/node/app
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
     depends_on:
       - elasticsearch01
       - kafka

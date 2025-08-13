@@ -6,21 +6,21 @@ import { Order } from './entities/order.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ElasticsearchModule } from '@nestjs/elasticsearch';
 
-// Crie o objeto de configuração do Elasticsearch de forma dinâmica.
-// const elasticsearchConfig = {
-//   node: process.env.ELASTICSEARCH_URL || 'http://elasticsearch01:9200',
-// };
-
-// // Se a chave da API for fornecida, adicione-a à configuração.
-// if (process.env.ELASTICSEARCH_API_KEY) {
-//   elasticsearchConfig['auth'] = {
-//     apikey: process.env.ELASTICSEARCH_API_KEY,
-//   };
-// }
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order]),
+    // ClientsModule.register([
+    //   {
+    //     name: 'ORDERS_SERVICE',
+    //     transport: Transport.KAFKA,
+    //     options: {
+    //       client: {
+    //         clientId: 'orders',
+    //         brokers: ['kafka:9092'],
+    //       },
+    //     },
+    //   },
+    // ]),
     ClientsModule.register([
       {
         name: 'ORDERS_SERVICE',
@@ -45,10 +45,12 @@ import { ElasticsearchModule } from '@nestjs/elasticsearch';
       },
     ]),
     ElasticsearchModule.register({
-      node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
-      auth: {
+      node: process.env.ELASTICSEARCH_URL || 'http://elasticsearch01:9200',
+      auth:  process.env.ELASTICSEARCH_API_KEY
+        ? {
         apiKey: process.env.ELASTICSEARCH_API_KEY || '',
       }
+        : undefined,
     }),
   ],
   controllers: [OrdersController],
