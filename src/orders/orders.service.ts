@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
@@ -11,6 +17,8 @@ import { QueryDslQueryContainer } from '@elastic/elasticsearch/api/types';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
@@ -20,19 +28,69 @@ export class OrdersService {
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
-    const newOrder = this.orderRepository.create(createOrderDto);
-    const order = await this.orderRepository.save(newOrder);
-    await lastValueFrom(this.kafkaClient.emit('order_created', order));
-    const result = await this.elasticsearchService.index({
-      index: 'orders',
-      id: order.id,
-      body: {
-        order,
-      },
-    });
-    console.log('Elasticsearch index result:', result);
+    const queryRunner =
+      this.orderRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    return order;
+    try {
+      const newOrder = this.orderRepository.create(createOrderDto);
+      const order = await queryRunner.manager.save(newOrder);
+
+      await queryRunner.commitTransaction();
+
+      this.handlePostOrderCreation(order);
+
+      return order;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Falha ao criar pedido: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(
+        'Não foi possível criar o pedido devido a uma falha interna.',
+      );
+    } finally {
+      try {
+        await queryRunner.release();
+      } catch (releaseError) {
+        this.logger.warn(
+          `Erro ao liberar query runner: ${releaseError.message}`,
+        );
+      }
+    }
+  }
+
+  private async handlePostOrderCreation(order: Order) {
+    try {
+      this.logger.log(
+        `Tentando enviar evento 'order_created' para o Kafka para o pedido ${order.id}`,
+      );
+      await lastValueFrom(this.kafkaClient.emit('order_created', order));
+      this.logger.log(
+        `Evento 'order_created' enviado com sucesso para o Kafka`,
+      );
+    } catch (kafkaError) {
+      this.logger.error(
+        `Falha ao publicar evento no Kafka para o pedido ${order.id}: ${kafkaError.message}`,
+        kafkaError.stack,
+      );
+    }
+
+    try {
+      const result = await this.elasticsearchService.index({
+        index: 'orders',
+        id: order.id,
+        body: { order },
+      });
+      this.logger.log(
+        `Pedido ${order.id} indexado no Elasticsearch:`,
+        result.body,
+      );
+    } catch (esError) {
+      this.logger.error(
+        `Falha ao indexar pedido no Elasticsearch para o pedido ${order.id}: ${esError.message}`,
+        esError.stack,
+      );
+    }
   }
 
   findAll(): Promise<Order[]> {
@@ -50,16 +108,52 @@ export class OrdersService {
       throw new NotFoundException(`Pedido com ID "${id}" não encontrado.`);
     }
 
-    const updatedOrder = Object.assign(existingOrder, updateOrderDto);
+    const queryRunner =
+      this.orderRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    await this.orderRepository.save(updatedOrder);
+    try {
+      const updatedOrder = Object.assign(existingOrder, updateOrderDto);
+      await queryRunner.manager.save(updatedOrder);
 
-    // Envia atualização para o Kafka
+      await this.sendKafkaEvent(updatedOrder);
+      await this.updateElasticsearch(id, updatedOrder);
+
+      await queryRunner.commitTransaction();
+
+      return updatedOrder;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(
+        `Falha ao atualizar pedido ${id}: ${error.message}`,
+        error.stack,
+      );
+
+      throw new InternalServerErrorException(
+        'Não foi possível atualizar o pedido devido a uma falha interna.',
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  private async sendKafkaEvent(updatedOrder: Order): Promise<void> {
+    this.logger.log(
+      `Tentando enviar evento 'order_status_updated' para o Kafka para o pedido ${updatedOrder.id}`,
+    );
     await lastValueFrom(
       this.kafkaClient.emit('order_status_updated', updatedOrder),
     );
+    this.logger.log(
+      `Evento 'order_status_updated' enviado com sucesso para o Kafka`,
+    );
+  }
 
-    // Atualiza no Elasticsearch usando o mesmo ID do banco como _id
+  private async updateElasticsearch(
+    id: string,
+    updatedOrder: Order,
+  ): Promise<void> {
     await this.elasticsearchService.update({
       index: 'orders',
       id,
@@ -67,14 +161,13 @@ export class OrdersService {
         doc: {
           order: {
             ...updatedOrder,
-            status: updateOrderDto.status,
+            status: updatedOrder.status,
           },
         },
         doc_as_upsert: true,
       },
     });
-
-    return updatedOrder;
+    this.logger.log(`Pedido ${id} atualizado no Elasticsearch.`);
   }
 
   async remove(id: string) {
