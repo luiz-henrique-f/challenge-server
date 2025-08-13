@@ -1,98 +1,178 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Starsoft Backend Challenge - API de Pedidos
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## 📋 Descrição
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+API REST desenvolvida em NestJS para gerenciamento de pedidos com integração a múltiplas tecnologias: PostgreSQL, Elasticsearch, Kafka e TypeORM. A aplicação oferece operações CRUD completas para pedidos, busca otimizada através do Elasticsearch e comunicação assíncrona via eventos Kafka.
 
-## Description
+## 🚀 Como Executar
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Pré-requisitos
 
-## Project setup
+- Docker e Docker Compose instalados
+- Node.js (versão 18 ou superior)
+- npm ou yarn
 
-```bash
-$ npm install
+### Configuração e Execução
+
+1. **Clone o repositório**
+
+   ```bash
+   git clone https://github.com/luiz-henrique-f/challenge-server.git
+   cd challenge-server
+   ```
+
+2. **Instale as dependências**
+
+   ```bash
+   npm install
+   ```
+
+3. **Execute a aplicação com Docker**
+   ```bash
+   docker compose -f docker-compose.dev.yml up -d
+   ```
+
+A aplicação estará disponível em `http://localhost:3000`
+
+## 🛠️ Tecnologias Utilizadas
+
+- **Backend**: NestJS (Node.js)
+- **Banco de Dados**: PostgreSQL
+- **ORM**: TypeORM
+- **Busca**: Elasticsearch 7.9.2
+- **Mensageria**: Apache Kafka
+- **Documentação**: Swagger/OpenAPI
+- **Containerização**: Docker & Docker Compose
+
+## 📊 Funcionalidades Implementadas
+
+### 🔧 Operações CRUD de Pedidos
+
+- **CREATE**: Criação de novos pedidos
+- **READ**: Busca de pedidos por ID, listagem de todos os pedidos
+- **UPDATE**: Atualização de pedidos (principalmente status)
+- **DELETE**: Exclusão de pedidos
+
+### 🔍 Sistema de Busca Avançada
+
+A aplicação utiliza o **Elasticsearch** para otimizar as buscas por:
+
+- **Identificador do pedido**: Busca rápida por ID
+- **Status do pedido**: Filtro por status específico
+- **Intervalo de datas**: Busca por período de criação
+- **Itens contidos no pedido**: Busca por itens específicos
+
+### 📡 Integração com Kafka
+
+A aplicação publica eventos no Kafka para:
+
+- **`order_created`**: Evento disparado na criação de novos pedidos
+- **`order_status_updated`**: Evento disparado na atualização do status do pedido
+
+### 🗄️ Sincronização com Elasticsearch
+
+- Dados são automaticamente indexados no Elasticsearch na criação de pedidos
+- Atualizações de status são refletidas no Elasticsearch em tempo real
+- Buscas otimizadas através do Elasticsearch para melhor performance
+
+## 🌐 Endpoints da API
+
+### Pedidos
+
+- `GET /orders` - Lista todos os pedidos
+- `GET /orders/:id` - Busca pedido por ID
+- `POST /orders` - Cria novo pedido
+- `PATCH /orders/:id` - Atualiza pedido
+- `DELETE /orders/:id` - Remove pedido
+
+### Busca Avançada
+
+- `GET /orders/searchId/:id` - Busca por ID específico
+- `GET /orders/searchStatus/:status` - Busca por status
+- `GET /orders/searchDateRange/:startDate/:endDate` - Busca por intervalo de datas
+- `POST /orders/searchByItems` - Busca por itens contidos no pedido
+
+## 🔧 Serviços Docker
+
+A aplicação utiliza os seguintes containers:
+
+- **App**: API NestJS (porta 3000)
+- **PostgreSQL**: Banco de dados (porta 5432)
+- **Elasticsearch**: Motor de busca (porta 9200)
+- **Kafka**: Broker de mensagens (porta 9092)
+- **Kafka UI**: Interface gráfica para monitoramento do Kafka (porta 8080)
+- **Kibana**: Interface gráfica para monitoramento do Elasticsearch (porta 5601)
+
+### Acessos às Interfaces
+
+- **API**: http://localhost:3000
+- **Swagger Documentation**: http://localhost:3000/api
+- **Kafka UI**: http://localhost:8080
+- **Kibana**: http://localhost:5601
+
+## 📈 Arquitetura
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   NestJS    │    │ PostgreSQL  │    │ Elasticsearch│
+│   API       │◄──►│   Database  │    │   Search    │
+└─────────────┘    └─────────────┘    └─────────────┘
+       │                   │                   │
+       │                   │                   │
+       ▼                   ▼                   ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│    Kafka    │    │  Kafka UI   │    │   Kibana    │
+│   Events    │    │  Monitor    │    │   Monitor   │
+└─────────────┘    └─────────────┘    └─────────────┘
 ```
 
-## Compile and run the project
+## 🧪 Testes
 
-```bash
-# development
-$ npm run start
+**Status**: Em desenvolvimento
 
-# watch mode
-$ npm run start:dev
+Os testes ainda não foram implementados, mas estão nos planos de desenvolvimento. O projeto já possui a estrutura de testes configurada com Jest.
 
-# production mode
-$ npm run start:prod
-```
+## 🚧 Limitações e Melhorias Futuras
 
-## Run tests
+### ⚠️ Limitações Atuais
 
-```bash
-# unit tests
-$ npm run test
+1. **Testes**: A aplicação não possui testes automatizados implementados
+2. **Monitoramento**: Falta integração com Grafana para métricas avançadas
+3. **Autenticação**: Não há sistema de autenticação/autorização
+4. **Validação**: Validações básicas implementadas, mas podem ser expandidas
+5. **Logs**: Sistema de logs estruturados não implementado
 
-# e2e tests
-$ npm run test:e2e
+### 🔮 Melhorias Planejadas
 
-# test coverage
-$ npm run test:cov
-```
+1. **Testes Automatizados**
+   - Implementar testes unitários com Jest
+   - Adicionar testes de integração
+   - Configurar testes end-to-end
 
-## Deployment
+2. **Monitoramento e Observabilidade**
+   - Integração com Grafana para dashboards
+   - Implementação de métricas customizadas
+   - Sistema de alertas
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+3. **Segurança**
+   - Implementar autenticação JWT
+   - Adicionar autorização baseada em roles
+   - Rate limiting para endpoints
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+4. **Performance**
+   - Implementar cache com Redis
+   - Otimizar queries do Elasticsearch
+   - Adicionar paginação nas listagens
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+5. **DevOps**
+   - CI/CD pipeline
+   - Deploy automatizado
+   - Health checks mais robustos
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 📝 Licença
 
-## Resources
+Este projeto foi desenvolvido como parte do desafio técnico da Starsoft.
 
-Check out a few resources that may come in handy when working with NestJS:
+## 👨‍💻 Desenvolvedor
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Desenvolvido com foco em boas práticas, arquitetura escalável e integração com tecnologias modernas de desenvolvimento.
