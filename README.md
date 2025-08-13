@@ -34,6 +34,14 @@ API REST desenvolvida em NestJS para gerenciamento de pedidos com integração a
 
 A aplicação estará disponível em `http://localhost:3000`
 
+### 🚀 Deploy Automatizado
+
+A aplicação possui deploy automatizado configurado. Qualquer push na branch `main` será automaticamente deployado em produção.
+
+**Link de Produção**: [https://challenge-server-l4ni.onrender.com](https://challenge-server-l4ni.onrender.com)
+
+**Plataforma**: Render
+
 ## 🛠️ Tecnologias Utilizadas
 
 - **Backend**: NestJS (Node.js)
@@ -106,7 +114,7 @@ A aplicação utiliza os seguintes containers:
 ### Acessos às Interfaces
 
 - **API**: http://localhost:3000
-- **Swagger Documentation**: http://localhost:3000/api
+- **Swagger Documentation**: http://localhost:3000/api-docs
 - **Kafka UI**: http://localhost:8080
 - **Kibana**: http://localhost:5601
 
@@ -166,7 +174,7 @@ Os testes ainda não foram implementados, mas estão nos planos de desenvolvimen
 
 5. **DevOps**
    - CI/CD pipeline
-   - Deploy automatizado
+   - Deploy automatizado na Render
    - Health checks mais robustos
 
 ## 📝 Licença
